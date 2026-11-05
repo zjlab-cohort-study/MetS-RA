@@ -3,20 +3,8 @@
 #  Step 3.1: two-sample Mendelian randomisation (TwoSampleMR), MetS -> RA
 #  ---------------------------------------------------------------------------
 #  Exposure : GCST90444487, MetS shared-component genetic score
-#             (GWAS Catalog harmonized TSV; Nat Genet 2024, N = 1,384,348,
-#             European, continuous trait).
-#  Outcome  : RA GWAS summary statistics in GWAS-VCF format (OUTCOME_FILE;
-#             the default is FinnGen finn-b-M13_RHEUMA, any GWAS-VCF outcome
-#             can be substituted).
-#
-#  Pipeline
-#   - Instruments: exposure p < 5e-8, clumped locally with plink against the
-#     1000 Genomes EUR reference (r2 < 0.001, 10 Mb window).
-#   - Outcome statistics extracted by rsid from the local VCF via gwasvcf.
-#   - harmonise_data aligns alleles and drops incompatible / palindromic SNPs.
-#   - Estimation: IVW, MR-Egger, weighted median, simple/weighted mode; plus
-#     heterogeneity (Cochran's Q), MR-Egger intercept, single-SNP Wald ratios,
-#     leave-one-out, Steiger directionality test, and (if installed) MR-PRESSO.
+#            
+#  Outcome  : FinnGen finn-b-M13_RHEUMA, RA GWAS summary statistics  
 #
 #  Dependencies: TwoSampleMR, gwasvcf (0.1.5), genetics.binaRies,
 #                VariantAnnotation, data.table. Data sources: see README.md.
@@ -46,7 +34,7 @@ OUTCOME_BUILD <- "GRCh37"
 OUTDIR <- "MR_results"
 dir.create(OUTDIR, showWarnings = FALSE, recursive = TRUE)
 
-# 1000 Genomes LD reference panel (~1.5 GB, downloaded once and reused)
+# 1000 Genomes LD reference panel
 REF_DIR <- "ld_ref"
 REF_URL <- "http://fileserve.mrcieu.ac.uk/ld/1kg.v3.tgz"
 
@@ -54,7 +42,7 @@ P_THR      <- 5e-8     # instrument significance threshold
 R2         <- 0.001    # clumping r2 threshold
 KB         <- 10000    # clumping window (kb)
 POP        <- "EUR"    # LD reference population
-EXPOSURE_N <- 1384348  # exposure GWAS sample size (absent from the harmonized TSV; used by the Steiger test)
+EXPOSURE_N <- 1384348  # exposure GWAS sample size 
 
 ## 1. Local LD reference panel 
 get_ld_bfile <- function(ref_dir, url, pop = "EUR") {
@@ -101,7 +89,7 @@ read_exposure <- function(file, p_thr) {
     eaf_col = "effect_allele_frequency", snp_col = "rsid")
   exp$exposure    <- "Metabolic syndrome"
   exp$id.exposure <- "GCST90444487"
-  exp$samplesize.exposure <- EXPOSURE_N  # needed by the Steiger test
+  exp$samplesize.exposure <- EXPOSURE_N  
   exp
 }
 message("\n==== 2. Reading and formatting the exposure ====")
@@ -217,7 +205,3 @@ cat("\n--- Pleiotropy (MR-Egger intercept) ---\n"); print(pleio)
 if (!is.null(dir_test)) { cat("\n--- Steiger directionality ---\n"); print(dir_test) }
 if (!is.null(presso))    { cat("\n--- MR-PRESSO ---\n");              print(presso$MainMR) }
 
-message("\nDone. Results saved to:\n  ", OUTDIR,
-        "\n  - harmonised_data.csv",
-        "\n  - MR_main / MR_heterogeneity / MR_egger_intercept / MR_singlesnp /",
-        "\n    MR_leaveoneout / MR_steiger .csv")
