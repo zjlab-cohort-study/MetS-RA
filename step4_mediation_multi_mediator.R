@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 ########################################################################
-# Step 4: multi-mediator causal mediation analysis (full bootstrap)
+# Step 4: multi-mediator causal mediation analysis 
 # - Exposure: categorical
 # - Mediators: multiple continuous variables, entered jointly into a
 #   single outcome model
@@ -27,7 +27,7 @@ mediators <- c("mediator1", "mediator2", "mediator3")
 continuous_vars <- c("Age", "Townsend_deprivation_index")
 
 categorical_vars <- c(
-  "Sex", "Race", "Educational.Level",
+  "Sex", "Race", "Educational_Level",
   "Smoking", "Alcohol_Drinking",
   "Household_Income"
 )
@@ -80,7 +80,7 @@ extract_named_coef <- function(model, target_name) {
 # -------------------------------
 # 2. Mediator standardisation
 # -------------------------------
-# Shapiro-Wilk normality check (on up to sample_n values)
+# Shapiro-Wilk normality check 
 check_normality <- function(x, sample_n = 5000, alpha = 0.05) {
   x <- x[!is.na(x)]
 
@@ -179,7 +179,7 @@ if (nrow(df_full) < 50) {
   stop("Fewer than 50 complete cases after joint modelling; check the missing values.")
 }
 
-# a-path: one linear model per mediator (same complete-case sample)
+# a-path: one linear model per mediator 
 a_fit_list <- list()
 for (m in mediators) {
   f_a <- as.formula(paste0("`", m, "` ~ ", exposure, " + ", paste(covars, collapse = " + ")))
@@ -263,7 +263,7 @@ for (term_name in exposure_terms) {
 }
 
 # -------------------------------
-# 4. Bootstrap (full refit)
+# 4. Bootstrap 
 # -------------------------------
 cat("Starting the multi-mediator bootstrap: B =", B, "\n")
 
@@ -435,12 +435,3 @@ out_total <- paste0("MultiMediation_total_B", B, "_", exposure, "_", event_var, 
 write.csv(res_mediator, out_mediator, row.names = FALSE)
 write.csv(res_total, out_total, row.names = FALSE)
 
-cat("\nMulti-mediator results saved:\n")
-cat("- ", out_mediator, "\n", sep = "")
-cat("- ", out_total, "\n", sep = "")
-
-cat("\n=== per mediator ===\n")
-print(res_mediator)
-
-cat("\n=== total indirect ===\n")
-print(res_total)
