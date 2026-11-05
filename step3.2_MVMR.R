@@ -2,11 +2,6 @@
 ###############################################################################
 #  Step 3.2: multivariable MR (TwoSampleMR), five MetS components -> RA
 #  ---------------------------------------------------------------------------
-#  The five MetS components (HDL, waist circumference, fasting glucose,
-#  hypertension, triglycerides) are correlated, so univariate MR cannot
-#  separate each component's own effect from effects transmitted via the
-#  others. MVMR estimates each component's direct effect conditional on the
-#  remaining four.
 #
 #  Exposures (GWAS-VCF, GRCh37):
 #    HDL cholesterol      ieu-a-299           continuous
@@ -14,16 +9,7 @@
 #    Fasting glucose      ebi-a-GCST005186    continuous
 #    Hypertension         ebi-a-GCST90038604  binary (log OR)
 #    Triglycerides        ieu-a-302           continuous
-#  Outcome: ieu-a-832 (RA, Okada 2014, GWAS-VCF)
-#
-#  Design
-#   - Instruments: p < 5e-8 in each component -> union -> joint clumping
-#     (r2 < 0.001, 10 Mb, EUR), so instruments are independent across
-#     components as well as within each.
-#   - Effects for the full merged SNP set are extracted from every component;
-#     a balanced exposure matrix is built on complete-case SNPs.
-#   - mv_harmonise_data aligns alleles across exposures and outcome;
-#     mv_residual / mv_multiple / mv_ivw / mv_lasso estimate the models.
+#  Outcome: RA (ieu-a-832)
 #
 #  Dependencies: TwoSampleMR, gwasvcf (0.1.5), genetics.binaRies,
 #                VariantAnnotation, data.table. Data sources: see README.md.
@@ -45,12 +31,12 @@ OUTCOME_FILE <- "ieu-a-832.vcf.gz"
 OUTDIR <- "MVMR_results"
 dir.create(OUTDIR, showWarnings = FALSE, recursive = TRUE)
 
-# 1000 Genomes LD reference (reuses the copy downloaded by step3.1 if present)
+# 1000 Genomes LD reference 
 REF_DIR <- "ld_ref"
 REF_URL <- "http://fileserve.mrcieu.ac.uk/ld/1kg.v3.tgz"
 
 P_THR  <- 5e-8
-LP_THR <- -log10(P_THR)  # 7.3010
+LP_THR <- -log10(P_THR)  
 R2     <- 0.001
 KB     <- 10000
 POP    <- "EUR"
@@ -63,10 +49,6 @@ TRAITS <- list(
   list(name = "Triglycerides",       id = "ieu-a-302",          file = "ieu-a-302.vcf.gz")
 )
 
-## Helper functions 
-# Fast bcftools extraction -> CollapsedVCF.
-# NOTE: the filter expression must be shQuote()-ed, otherwise '>' is parsed
-# by the shell as redirection.
 extract_vcf <- function(vcffile, filter_expr) {
   tmp <- tempfile(fileext = ".vcf.gz")
   system2(bcftools, c("view", "-i", shQuote(filter_expr), "-Oz", "-o", tmp, vcffile),
@@ -149,9 +131,6 @@ for (tr in TRAITS) {
 }
 all_inst <- do.call(rbind, inst_all)
 
-# Joint clumping: take each SNP's minimum p across components so that
-# clump_data picks lead SNPs from the merged pool; the column must keep the
-# pval.exposure name for clump_data to rank by p value.
 clump_in <- aggregate(pval.exposure ~ SNP, data = all_inst[, c("SNP", "pval.exposure")], FUN = min)
 clumped <- clump_data(clump_in, clump_kb = KB, clump_r2 = R2, pop = POP,
                       bfile = bfile, plink_bin = plink_bin)
