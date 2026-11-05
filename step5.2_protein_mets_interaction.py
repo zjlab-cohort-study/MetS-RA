@@ -15,11 +15,6 @@ does not rely on proportional hazards for the strong MetS -> RA association;
 b3 itself remains estimable and tests whether the protein-RA association
 differs between the two groups.
 
-A protein is flagged MetS-specific when the interaction term is significant
-(FDR < 0.05) AND the protein is significant in the MetS stratum (FDR < 0.05,
-from the step 5.1 stratified results, merged via --stratified).
-
-Any column not listed in NON_PROTEIN_COLS is treated as a protein.
 """
 
 import argparse
@@ -38,7 +33,7 @@ COVARIATES = [
     "Sex",
     "Age",
     "Race",
-    "Educational.Level",
+    "Educational_Level",
     "Smoking",
     "Alcohol_Drinking",
     "Townsend_deprivation_index",
@@ -47,7 +42,7 @@ COVARIATES = [
 
 # Columns that are not proteins; everything else is treated as a protein.
 NON_PROTEIN_COLS = {
-    "eid",
+    "sample_id",
     EVENT_COL,
     TIME_COL,
     METS_COL,
@@ -287,29 +282,6 @@ def main() -> None:
 
     res.to_csv(out_dir / "interaction_results_mets_vs_nonmets.csv", index=False)
 
-    res.loc[res["sig_interaction_fdr"], "protein"].to_csv(
-        out_dir / "proteins_interaction_sig_fdr.txt", index=False, header=False)
-    res.loc[res["sig_interaction_bonf"], "protein"].to_csv(
-        out_dir / "proteins_interaction_sig_bonf.txt", index=False, header=False)
-    res.loc[res["sig_interaction_nominal"], "protein"].to_csv(
-        out_dir / "proteins_interaction_nominal.txt", index=False, header=False)
-    res.loc[res["mets_specific"], "protein"].to_csv(
-        out_dir / "mets_specific_proteins.txt", index=False, header=False)
-    res.loc[res["mets_specific_nominal"], "protein"].to_csv(
-        out_dir / "mets_specific_nominal_proteins.txt", index=False, header=False)
-
-    print("\n================ SUMMARY ================", flush=True)
-    print(f" proteins tested           : {len(res)}", flush=True)
-    print(f" interaction nominal p<0.05 : {int(res['sig_interaction_nominal'].sum())}", flush=True)
-    print(f" interaction FDR<0.05       : {int(res['sig_interaction_fdr'].sum())}", flush=True)
-    print(f" interaction Bonferroni     : {int(res['sig_interaction_bonf'].sum())}", flush=True)
-    print(f" MetS-specific (strict)     : {int(res['mets_specific'].sum())}", flush=True)
-    print(f" MetS-specific (nominal)    : {int(res['mets_specific_nominal'].sum())}", flush=True)
-    if res["mets_specific_nominal"].sum():
-        names = res.loc[res["mets_specific_nominal"], "protein"].tolist()
-        print(" MetS-specific (nominal)   : " + ", ".join(names), flush=True)
-    print(f"\n[DONE] Outputs in {out_dir}", flush=True)
-
-
+    
 if __name__ == "__main__":
     main()
