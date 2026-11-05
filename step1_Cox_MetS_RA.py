@@ -82,9 +82,7 @@ def fit_single_exposure_cox(
         "prevalence": float(d[exposure].mean()),
     }
 
-    # Association of each adjustment covariate with the outcome, taken from the
-    # same Cox fit. Skipped for Model-1 (no covariates) and for any term that
-    # lifelines dropped (e.g. perfect collinearity).
+    
     covariate_rows: list[dict] = []
     for term in covariates:
         if term not in cph.summary.index:
@@ -189,12 +187,7 @@ def format_p(value: float) -> str:
 
 
 def add_derived_exposures(df: pd.DataFrame) -> pd.DataFrame:
-    """Derive components_total (0-5) and MetS (>= 3 abnormal components).
-
-    ``min_count`` makes the sum NaN whenever any component is missing, so participants
-    with incomplete component data are excluded from the derived exposures instead of
-    being assigned a count based on the non-missing components only.
-    """
+    
     out = df.copy()
     n_abnormal = out[COMPONENT_COLS].sum(axis=1, min_count=len(COMPONENT_COLS))
     out["components_total"] = n_abnormal
@@ -203,14 +196,7 @@ def add_derived_exposures(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def expand_to_dummies(df: pd.DataFrame, cols: list[str]) -> tuple[pd.DataFrame, list[str]]:
-    """Expand integer categorical covariates into 0/1 dummy columns.
-
-    The LOWEST observed level of each variable is used as the reference and gets no
-    dummy, so Smoking/Alcohol_Drinking (0,1,2) -> ref 0 and Household_Income (1-5)
-    -> ref 1. Rows where the source value is missing become NaN in ALL of that
-    variable's dummies, so that the downstream ``dropna()`` drops them instead of
-    silently coding them as the reference level.
-    """
+    
     dummy_cols: list[str] = []
     for col in cols:
         present = df[col].notna()
@@ -223,7 +209,7 @@ def expand_to_dummies(df: pd.DataFrame, cols: list[str]) -> tuple[pd.DataFrame, 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Recompute Step1 Cox models.")
+    parser = argparse.ArgumentParser(description="Step1 Cox models.")
     parser.add_argument(
         "--input",
         default="input_file.csv",
@@ -258,7 +244,6 @@ def main() -> None:
 
     df = add_derived_exposures(df)
 
-    # Model Smoking/Alcohol_Drinking/Household_Income as unordered categorical
     # (dummies, lowest observed level = reference).
     df, cat_dummy_cols = expand_to_dummies(df, DUMMY_CATEGORICAL_COVS)
     model_full_covs = [c for c in FULL_COVS if not (args.no_bmi and c == "BMI")]
