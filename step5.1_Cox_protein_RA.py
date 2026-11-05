@@ -5,10 +5,8 @@
 Within each MetS stratum (non-MetS / MetS), a covariate-adjusted Cox model is
 fitted for every protein column: proteins are z-scored within the stratum and
 tested one at a time, with Bonferroni and Benjamini-Hochberg correction across
-the tested proteins. BMI is present in the data but deliberately not adjusted
-for (it lies on the causal pathway between MetS and RA).
+the tested proteins. 
 
-Any column not listed in NON_PROTEIN_COLS is treated as a protein.
 """
 
 import argparse
@@ -27,7 +25,7 @@ COVARIATES = [
     "Sex",
     "Age",
     "Race",
-    "Educational.Level",
+    "Educational_Level",
     "Smoking",
     "Alcohol_Drinking",
     "Townsend_deprivation_index",
@@ -36,7 +34,7 @@ COVARIATES = [
 
 # Columns that are not proteins; everything else is treated as a protein.
 NON_PROTEIN_COLS = {
-    "eid",
+    "sample_id",
     EVENT_COL,
     TIME_COL,
     STRATA_COL,
@@ -178,10 +176,6 @@ def run_stratum(df_all: pd.DataFrame, mets_value: int, label: str, out_dir: Path
 
     out_dir.mkdir(parents=True, exist_ok=True)
     res.to_csv(out_dir / "cox_results.csv", index=False)
-    res.loc[res["sig_bonferroni"], "protein"].to_csv(
-        out_dir / "significant_proteins_bonferroni_p05.txt", index=False, header=False)
-    res.loc[res["sig_fdr_005"], "protein"].to_csv(
-        out_dir / "significant_proteins_fdr005.txt", index=False, header=False)
 
     summary = pd.DataFrame([{
         "stratum": label, "mets_value": mets_value,
