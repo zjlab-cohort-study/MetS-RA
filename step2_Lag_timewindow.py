@@ -44,12 +44,7 @@ DUMMY_CATEGORICAL_COVS = ["Smoking", "Alcohol_Drinking", "Household_Income"]
 
 
 def add_derived_exposures(df: pd.DataFrame) -> pd.DataFrame:
-    """Derive components_total (0-5) and MetS (>= 3 abnormal components).
-
-    ``min_count`` makes the sum NaN whenever any component is missing, so participants
-    with incomplete component data are excluded from the derived exposures instead of
-    being assigned a count based on the non-missing components only.
-    """
+    
     out = df.copy()
     n_abnormal = out[COMPONENT_COLS].sum(axis=1, min_count=len(COMPONENT_COLS))
     out["components_total"] = n_abnormal
@@ -58,14 +53,7 @@ def add_derived_exposures(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def expand_to_dummies(df: pd.DataFrame, cols: list[str]) -> tuple[pd.DataFrame, list[str]]:
-    """Expand integer categorical covariates into 0/1 dummy columns.
-
-    The LOWEST observed level of each variable is used as the reference and gets no
-    dummy, so Smoking/Alcohol_Drinking (0,1,2) -> ref 0 and Household_Income (1-5)
-    -> ref 1. Rows where the source value is missing become NaN in ALL of that
-    variable's dummies, so that the downstream ``dropna()`` drops them instead of
-    silently coding them as the reference level.
-    """
+    
     dummy_cols: list[str] = []
     for col in cols:
         present = df[col].notna()
@@ -163,7 +151,6 @@ def main() -> None:
 
     df = add_derived_exposures(df)
 
-    # Model Smoking/Alcohol_Drinking/Household_Income as unordered categorical
     # (dummies, lowest observed level = reference).
     df, cat_dummy_cols = expand_to_dummies(df, DUMMY_CATEGORICAL_COVS)
     full_covs_expanded = [c for c in FULL_COVS if c not in DUMMY_CATEGORICAL_COVS] + cat_dummy_cols
@@ -193,8 +180,8 @@ def main() -> None:
 
     lag_df = pd.DataFrame(lag_results)
     lag_df["p_text"] = lag_df["p"].apply(format_p)
-    lag_df.to_csv(out_dir / "step2_lag_cox_results_v2.csv", index=False)
-    pd.DataFrame(lag_summary).to_csv(out_dir / "step2_lag_exclusion_summary_v2.csv", index=False)
+    lag_df.to_csv(out_dir / "step2_lag_cox_results.csv", index=False)
+    pd.DataFrame(lag_summary).to_csv(out_dir / "step2_lag_exclusion_summary.csv", index=False)
 
     window_results = []
     for window_key, label in [("0_5", "0-5y"), ("5_10", "5-10y"), ("gt_10", ">10y")]:
@@ -208,7 +195,7 @@ def main() -> None:
 
     win_df = pd.DataFrame(window_results)
     win_df["p_text"] = win_df["p"].apply(format_p)
-    win_df.to_csv(out_dir / "step2_timewindow_cox_results_v2.csv", index=False)
+    win_df.to_csv(out_dir / "step2_timewindow_cox_results.csv", index=False)
 
     summary = pd.DataFrame(
         {
@@ -216,7 +203,7 @@ def main() -> None:
             "value": [int(df.shape[0]), int(df[EVENT_COL].sum()), int(lag_df.shape[0]), int(win_df.shape[0])],
         }
     )
-    summary.to_csv(out_dir / "step2_run_summary_v2.csv", index=False)
+    summary.to_csv(out_dir / "step2_run_summary.csv", index=False)
 
     print(f"[DONE] Outputs saved to: {out_dir}")
     view_cols = ["N", "events", "HR", "CI95_lower", "CI95_upper", "p"]
